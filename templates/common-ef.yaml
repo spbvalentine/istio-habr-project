@@ -1,0 +1,40 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: common-ef
+  labels:
+    app: ingressgateway
+spec:
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+          portNumber: 8443
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.rbac
+          typed_config:
+            '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
+            rules:
+              action: ALLOW
+              policies:
+                auth-by-cert-policy:
+                  permissions:
+                    - any: true
+                  principals:
+                    - or_ids:
+                        ids:
+                          - header:
+                              name: x-forwarded-client-cert
+                              safe_regex_match:
+                                google_re2:
+                                  max_program_size: 10000
+                                regex: {{ .Values.accessControl.regex }}
+  workloadSelector:
+    labels:
+      app: ingressgateway

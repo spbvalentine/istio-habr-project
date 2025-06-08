@@ -1,0 +1,14 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: postgres-external-dr
+spec:
+  exportTo:
+    - .
+  host: {{ .Values.external.postgres.host }}
+  subsets:
+    - name: tcp-passthrough-postgres
+  workloadSelector:
+    matchLabels:
+      app: egressgateway

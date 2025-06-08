@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: realms-keycloak
+data:
+  realm.json: |-
+    {{- tpl (.Files.Get "conf/realm.json") . | nindent 4 }}

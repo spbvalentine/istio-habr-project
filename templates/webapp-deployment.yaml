@@ -1,0 +1,156 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: webapp
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: webapp
+      annotations:
+        sidecar.istio.io/inject: 'true'
+        sidecar.istio.io/proxyCPU: 100m
+        sidecar.istio.io/proxyCPULimit: 200m
+        sidecar.istio.io/proxyMemory: 64Mi
+        sidecar.istio.io/proxyMemoryLimit: 128Mi
+        sidecar.istio.io/rewriteAppHTTPProbers: 'true'
+    spec:
+      restartPolicy: Always
+      serviceAccountName: default
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /readiness
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            timeoutSeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 5
+          terminationMessagePath: /dev/termination-log
+          name: webapp
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            timeoutSeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 5
+          env:
+            - name: namespace
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: pod
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          securityContext:
+            runAsGroup: 10001
+            procMount: Default
+            runAsUser: 10001
+            seccompProfile:
+              type: RuntimeDefault
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: synai-default-secret
+              readOnly: true
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+            - name: pid
+              mountPath: /pid/
+            - name: cache
+              mountPath: /var/log/nginx/
+            - name: proxy
+              mountPath: /var/log/nginx/tmp/proxy
+            - name: fastcgi
+              mountPath: /var/log/nginx/tmp/fastcgi
+            - name: client
+              mountPath: /var/log/nginx/tmp/client
+            - name: uwsgi
+              mountPath: /var/log/nginx/tmp/uwsgi
+            - name: scgi
+              mountPath: /var/log/nginx/tmp/scgi
+            - name: webserver
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          terminationMessagePolicy: File
+          image: {{ .Values.images.webapp }}
+      automountServiceAccountToken: false
+      serviceAccount: default
+      volumes:
+        - name: synai-default-secret
+          projected:
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3600
+                  path: token
+            defaultMode: 400
+        - name: pid
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: client
+          emptyDir: {}
+        - name: fastcgi
+          emptyDir: {}
+        - name: proxy
+          emptyDir: {}
+        - name: uwsgi
+          emptyDir: {}
+        - name: scgi
+          emptyDir: {}
+        - name: webserver
+          configMap:
+            name: webapp
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+            defaultMode: 256
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

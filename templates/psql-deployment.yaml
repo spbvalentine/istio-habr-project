@@ -1,0 +1,77 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: psql
+  labels:
+    app: psql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: psql
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: psql
+      annotations:
+        sidecar.istio.io/inject: 'true'
+        sidecar.istio.io/proxyCPU: 100m
+        sidecar.istio.io/proxyCPULimit: 200m
+        sidecar.istio.io/proxyMemory: 128Mi
+        sidecar.istio.io/proxyMemoryLimit: 256Mi
+        sidecar.istio.io/rewriteAppHTTPProbers: 'true'
+    spec:
+      restartPolicy: Always
+      serviceAccountName: default
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: psql
+          image: {{ .Values.images.postgres }}
+          env:
+            - name: POSTGRES_PASSWORD
+              value: demo
+          resources:
+            limits:
+              cpu: 300m
+              memory: 300Mi
+            requests:
+              cpu: 300m
+              memory: 300Mi
+          volumeMounts:
+            - name: pg-data
+              mountPath: /var/lib/postgresql
+            - name: ca
+              mountPath: /certs
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      automountServiceAccountToken: false
+      serviceAccount: default
+      volumes:
+        - name: pg-data
+          emptyDir:
+            medium: Memory
+        - name: ca
+          secret:
+            secretName: egressgateway-certs-secret
+            items:
+              - key: ca.crt
+                path: ca.crt
+            defaultMode: 256
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

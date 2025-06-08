@@ -1,0 +1,14 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: web-internal-dr
+spec:
+  exportTo:
+    - .
+  host: web-egress-service
+  subsets:
+    - name: web-internal
+  workloadSelector:
+    matchLabels:
+      app: webapp

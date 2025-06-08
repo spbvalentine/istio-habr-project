@@ -1,0 +1,79 @@
+---
+images:
+  webapp: nginx:1.23.1
+  envoy: istio/proxyv2:1.17.3
+  keycloak: keycloak/keycloak:23.0.6
+  postgres: postgres:14.1
+
+keycloak:
+  host: kc.solution.test
+  database:
+    host: 10.40.20.57
+    port: 31468
+    user: postgres
+    password: postgres
+    schema: public
+    name: keycloak
+  admin:
+    user: admin
+    password: admin
+  realm: demo
+
+cp:
+  istiod: istiod.da-dp01-db-kintsugi-istio.svc:15012
+
+
+internal:
+  webapp:
+    host: webapp.solution.test
+
+external:
+  postgres:
+    host: repository.solution.test
+    ip: 10.40.20.57
+    port: 31468
+  web:
+    host: es.solution.test
+    ip: ""
+    port: 9200
+
+idp:
+  issuer: https://kc.solution.test/auth/realms/demo
+  jwksUri: https://kc.solution.test/auth/realms/demo/protocol/openid-connect/certs
+
+accessControl:
+  regex: '.*Subject="CN=demo".*'
+
+certs:
+  ingress:
+    tls.crt: |-
+      -----BEGIN CERTIFICATE-----
+      (Base64 encoded data)
+      -----END CERTIFICATE-----
+    tls.key: |-
+      -----BEGIN PRIVATE KEY-----
+      (Base64 encoded data)
+      -----END PRIVATE KEY-----
+  egress:
+    tls.crt: |-
+      -----BEGIN CERTIFICATE-----
+      (Base64 encoded data)
+      -----END CERTIFICATE-----
+    tls.key: |-
+      -----BEGIN PRIVATE KEY-----
+      (Base64 encoded data)
+      -----END PRIVATE KEY-----
+  keycloak:
+    tls.crt: |-
+      -----BEGIN CERTIFICATE-----
+      (Base64 encoded data)
+      -----END CERTIFICATE-----
+    tls.key: |-
+      -----BEGIN PRIVATE KEY-----
+      (Base64 encoded data)
+      -----END PRIVATE KEY-----
+  common:
+    ca.crt: |-
+      -----BEGIN CERTIFICATE-----
+      (Base64 encoded data)
+      -----END CERTIFICATE-----

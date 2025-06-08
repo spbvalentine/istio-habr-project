@@ -1,0 +1,19 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: web-se
+spec:
+  exportTo:
+    - .
+  hosts:
+    - {{ .Values.external.web.host }}
+  location: MESH_EXTERNAL
+  ports:
+    - name: http-elastic
+      number: 8080
+      protocol: HTTP
+    - name: tls-elastic
+      number: {{ .Values.external.web.port }}
+      protocol: TLS
+  resolution: DNS

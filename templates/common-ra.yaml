@@ -1,0 +1,10 @@
+---
+apiVersion: security.istio.io/v1
+kind: RequestAuthentication
+metadata:
+  name: common-ra
+spec:
+  jwtRules:
+    - forwardOriginalToken: true
+      issuer: {{ .Values.idp.issuer }}
+      jwksUri: {{ .Values.idp.jwksUri }}

@@ -1,0 +1,74 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  labels:
+    app: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      volumes:
+        - name: certs
+          secret:
+            secretName: certs-keycloak
+            defaultMode: 420
+            items:
+              - key: tls.key
+                path: tls.key
+              - key: tls.crt
+                path: tls.crt
+              - key: ca.crt
+                path: ca.crt
+        - name: outgoing-cert
+          secret:
+            secretName: certs-keycloak
+            items:
+              - key: ca.crt
+                path: outgoing.keystore
+            defaultMode: 256
+        - name: realms
+          configMap:
+            name: realms-keycloak
+            items:
+              - key: realm.json
+                path: realm.json
+            defaultMode: 420
+      containers:
+        - name: keycloak
+          image: {{ .Values.images.keycloak }}
+          args: ["start", "--import-realm"]
+          volumeMounts:
+            - name: certs
+              readOnly: true
+              mountPath: /etc/x509/https
+            - name: outgoing-cert
+              readOnly: true
+              mountPath: /opt/jboss/certs
+            - name: realms
+              readOnly: true
+              mountPath: /opt/keycloak/data/import
+          envFrom:
+            - secretRef:
+                name: keycloak
+          ports:
+            - name: https
+              containerPort: 8443
+          resources:
+            limits:
+              cpu: '1'
+              memory: 2Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /auth/realms/master
+              port: 8080
