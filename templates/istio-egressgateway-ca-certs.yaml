@@ -1,0 +1,9 @@
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: istio-egressgateway-ca-certs
+stringData:
+  ca.crt: |-
+    {{ index .Values.certs.elastic "ca.crt" | nindent 4 }}
+type: Opaque

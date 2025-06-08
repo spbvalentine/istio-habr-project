@@ -1,0 +1,11 @@
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: webapp-ingress-cert
+data:
+  tls.crt: |-
+    {{ index .Values.certs.elastic "tls.crt" | nindent 4 }}
+  tls.key: |-
+    {{ index .Values.certs.elastic "tls.key" | nindent 4 }}
+type: kubernetes.io/tls

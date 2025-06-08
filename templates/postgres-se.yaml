@@ -1,0 +1,20 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: postgres-se
+  labels:
+    app: egressgateway
+spec:
+  endpoints:
+    - address: {{ .Values.external.postgres.ip }}
+  exportTo:
+    - .
+  hosts:
+    - {{ .Values.external.postgres.host }}
+  location: MESH_EXTERNAL
+  ports:
+    - name: tcp-postgres
+      number: {{ .Values.external.postgres.port }}
+      protocol: tcp
+  resolution: STATIC

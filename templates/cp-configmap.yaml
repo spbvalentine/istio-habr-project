@@ -1,0 +1,17 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: istio-basic
+data:
+  mesh: |-
+    accessLogFile: /dev/stdout
+    defaultConfig:
+      discoveryAddress: {{ .Values.cp.istiod }}
+    dnsRefreshRate: 300s
+    enablePrometheusMerge: true
+    enableTracing: true
+    ingressControllerMode: "OFF"
+    outboundTrafficPolicy:
+      mode: REGISTRY_ONLY
+    rootNamespace: {{ .Values.cp.namespace }}
+    trustDomain: cluster.local

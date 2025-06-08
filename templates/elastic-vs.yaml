@@ -1,0 +1,34 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: elastic-vs
+spec:
+  exportTo:
+    - .
+  gateways:
+    - elastic-gw
+    - mesh
+  hosts:
+    - {{ .Values.external.elastic.host }}
+  http:
+    - match:
+        - gateways:
+            - mesh
+          port: {{ .Values.external.elastic.port }}
+      route:
+        - destination:
+            host: egress-elastic-service
+            port:
+              number: 4000
+            subset: elastic-internal
+    - match:
+        - gateways:
+            - elastic-gw
+          port: 4000
+      route:
+        - destination:
+            host: {{ .Values.external.elastic.host }}
+            port:
+              number: {{ .Values.external.elastic.port }}
+            subset: tls-origination-elastic

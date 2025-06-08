@@ -1,0 +1,14 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: elastic-internal-dr
+spec:
+  exportTo:
+    - .
+  host: egress-elastic-service
+  subsets:
+    - name: elastic-internal
+  workloadSelector:
+    matchLabels:
+      app: webapp

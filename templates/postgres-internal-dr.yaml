@@ -1,0 +1,11 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: postgres-internal-dr
+spec:
+  exportTo:
+    - .
+  host: egressgateway-postgres
+  subsets:
+    - name: postgres-internal
