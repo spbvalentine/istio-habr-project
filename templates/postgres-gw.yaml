@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: postgres-gw
+spec:
+  selector:
+    app: egressgateway
+  servers:
+    - hosts:
+        - {{ .Values.external.postgres.host }}
+      port:
+        name: tcp-passthrough
+        number: 5000
+        protocol: TCP

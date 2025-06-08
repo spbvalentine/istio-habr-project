@@ -1,0 +1,25 @@
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: authz
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            requestPrincipals:
+              - '*'
+      to:
+        - operation:
+            methods:
+              - GET
+            paths:
+              - /readiness
+      when:
+        - key: 'request.auth.claims[groups]'
+          values:
+            - kintsugi-readiness-role
+  selector:
+    matchLabels:
+      app: webapp

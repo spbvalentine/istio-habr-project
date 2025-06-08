@@ -1,0 +1,14 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: elastic-egress-service
+spec:
+  ports:
+    - name: tcp-elasticsearch
+      protocol: TCP
+      port: 4000
+      targetPort: 4000
+  type: ClusterIP
+  selector:
+    app: egressgateway

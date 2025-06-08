@@ -1,0 +1,14 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres-egress-service
+spec:
+  ports:
+    - name: tcp-passthrough
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+  selector:
+    app: egressgateway
