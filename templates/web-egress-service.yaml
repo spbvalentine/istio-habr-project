@@ -1,0 +1,14 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: web-egress-service
+spec:
+  ports:
+    - name: tcp-web
+      protocol: TCP
+      port: 4000
+      targetPort: 4000
+  type: ClusterIP
+  selector:
+    app: egressgateway

@@ -1,0 +1,26 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: web-external-dr
+spec:
+  exportTo:
+    - .
+  host: {{ .Values.external.web.host }}
+  subsets:
+    - name: tls-origination-web
+      trafficPolicy:
+        loadBalancer:
+          simple: ROUND_ROBIN
+        portLevelSettings:
+          - port:
+              number: {{ .Values.external.web.port }}
+            tls:
+              caCertificates: /secrets/istio/egressgateway-certs/ca.crt
+              clientCertificate: /secrets/istio/egressgateway-certs/tls.crt
+              mode: SIMPLE
+              privateKey: /secrets/istio/egressgateway-certs/tls.key
+              sni: {{ .Values.external.web.host }}
+  workloadSelector:
+    matchLabels:
+      app: egressgateway

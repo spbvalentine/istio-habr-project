@@ -1,0 +1,27 @@
+---
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: authz
+  labels:
+    app.kubernetes.io/managed-by: Helm
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            requestPrincipals:
+              - '*'
+      to:
+        - operation:
+            methods:
+              - GET
+            paths:
+              - /readiness
+      when:
+        - key: request.auth.claims[realm_access][roles]
+          values:
+            - readiness-role
+  selector:
+    matchLabels:
+      app: webapp

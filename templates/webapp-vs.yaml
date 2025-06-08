@@ -1,0 +1,20 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  labels:
+    app: webapp
+  name: webapp-vs
+spec:
+  exportTo:
+    - .
+  gateways:
+    - webapp-gw
+  hosts:
+    - {{ .Values.internal.webapp.host }}
+  http:
+    - route:
+        - destination:
+            host: webapp
+            port:
+              number: 8080
