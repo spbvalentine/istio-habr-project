@@ -1,0 +1,38 @@
+---
+images:
+  app: sberworks.ru/sbt_dev/ci90000016_kintsugi_dev/develop/dbcm/webmock:9165
+  envoy: sberworks.ru/sbt/ci90000017_synapse/ci90000017_synapse/polm/proxyv2@sha256:11e0740fa0ceafcf26752f191682ed2a55ba99848b9a720669eb5e916103ae4b
+
+app:
+  host: webapp-da-dp01-db-kintsugi-demostand.apps.dap.devpub-01.solution.sbt
+
+cp:
+  istiod: istiod-da-dp01-db-kintsugi-istio.da-dp01-db-kintsugi-istio.svc:15012
+
+external:
+  postgres:
+    host: repository.solution.test
+    ip: 10.40.20.57
+    port: 5433
+  elastic:
+    host: elastic.solution.test
+    ip: ""
+    port: 9200
+
+idp:
+  issuer: https://keycloak-da-dp01-db-kintsugi-iam.apps.dap.devpub-01.solution.sbt/auth/realms/da-dp01-db-kintsugi-demostand
+  jwksUri: https://keycloak-da-dp01-db-kintsugi-iam.apps.dap.devpub-01.solution.sbt/auth/realms/da-dp01-db-kintsugi-demostand/protocol/openid-connect/certs
+
+certs:
+  postgres:
+    tls.crt: ""
+    tls.key: ""
+    ca.crt: ""
+  elastic:
+    tls.crt: ""
+    tls.key: ""
+    ca.crt: ""
+  webapp:
+    tls.crt: ""
+    tls.key: ""
+

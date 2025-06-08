@@ -1,0 +1,34 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: postgres-vs
+spec:
+  exportTo:
+    - .
+  gateways:
+    - postgres-gw
+    - mesh
+  hosts:
+    - {{ .Values.external.postgres.host }}
+  tcp:
+    - match:
+        - gateways:
+            - mesh
+          port: {{ .Values.external.postgres.port }}
+      route:
+        - destination:
+            host: postgres-egress-service
+            port:
+              number: 5000
+            subset: postgres-internal
+    - match:
+        - gateways:
+            - postgres-gw
+          port: 5000
+      route:
+        - destination:
+            host: {{ .Values.external.postgres.host }}
+            port:
+              number: {{ .Values.external.postgres.port }}
+            subset: tcp-passthrough-postgres
