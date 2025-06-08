@@ -1,0 +1,34 @@
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: web-vs
+spec:
+  exportTo:
+    - .
+  gateways:
+    - web-gw
+    - mesh
+  hosts:
+    - {{ .Values.external.web.host }}
+  http:
+    - match:
+        - gateways:
+            - mesh
+          port: 8080
+      route:
+        - destination:
+            host: web-egress-service
+            port:
+              number: 4000
+            subset: web-internal
+    - match:
+        - gateways:
+            - web-gw
+          port: 4000
+      route:
+        - destination:
+            host: {{ .Values.external.web.host }}
+            port:
+              number: {{ .Values.external.web.port }}
+            subset: tls-origination-web

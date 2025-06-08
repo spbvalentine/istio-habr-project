@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: web-gw
+spec:
+  selector:
+    app: egressgateway
+  servers:
+    - hosts:
+        - {{ .Values.external.web.host }}
+      port:
+        name: http-web
+        number: 4000
+        protocol: HTTP

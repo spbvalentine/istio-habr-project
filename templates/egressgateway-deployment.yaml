@@ -1,0 +1,254 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: egressgateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: egressgateway
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: egressgateway
+      annotations:
+        sidecar.istio.io/inject: 'false'
+    spec:
+      restartPolicy: Always
+      serviceAccountName: default
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 10001
+        runAsNonRoot: true
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - resources:
+            limits:
+              cpu: '1'
+              ephemeral-storage: 512Mi
+              memory: 512Mi
+            requests:
+              cpu: 500m
+              ephemeral-storage: 256Mi
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz/ready
+              port: 15021
+              scheme: HTTP
+            initialDelaySeconds: 1
+            timeoutSeconds: 1
+            periodSeconds: 2
+            successThreshold: 1
+            failureThreshold: 30
+          terminationMessagePath: /dev/termination-log
+          name: istio-proxy
+          env:
+            - name: ISTIO_META_UNPRIVILEGED_POD
+              value: 'true'
+            - name: JWT_POLICY
+              value: third-party-jwt
+            - name: PILOT_CERT_PROVIDER
+              value: istiod
+            - name: CA_ADDR
+              value: {{ .Values.cp.istiod }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: INSTANCE_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+            - name: HOST_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.hostIP
+            - name: SERVICE_ACCOUNT
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: spec.serviceAccountName
+            - name: CANONICAL_SERVICE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: 'metadata.labels[''service.istio.io/canonical-name'']'
+            - name: CANONICAL_REVISION
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: 'metadata.labels[''service.istio.io/canonical-revision'']'
+            - name: ISTIO_META_WORKLOAD_NAME
+              value: istio-egressgateway
+            - name: ISTIO_META_MESH_ID
+              value: cluster.local
+            - name: ISTIO_META_ROUTER_MODE
+              value: sni-dnat
+            - name: ISTIO_META_CLUSTER_ID
+              value: Kubernetes
+            - name: PILOT_LOG_PATH
+              value: /var/log/audit/application.log
+            - name: PILOT_LOG_LEVEL
+              value: 'default:info'
+            - name: PROXY_LOG_PATH
+              value: /var/log/audit/envoy.log
+            - name: PROXY_LOG_LEVEL
+              value: info
+            - name: LOG_ROTATE_MAX_SIZE
+              value: '1'
+            - name: LOG_ROTATE_MAX_BACKUPS
+              value: '2'
+            - name: LOG_ROTATE_MAX_AGE
+              value: '5'
+          securityContext:
+            runAsGroup: 10001
+            procMount: Default
+            runAsUser: 10001
+            seccompProfile:
+              type: RuntimeDefault
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            privileged: false
+            capabilities:
+              drop:
+                - ALL
+            allowPrivilegeEscalation: false
+          ports:
+            - name: status-port
+              containerPort: 15021
+              protocol: TCP
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            - name: tls
+              containerPort: 15443
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: synai-default-secret-istio
+              readOnly: true
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+            - name: istio-access-logs
+              mountPath: /var/log/audit
+            - name: istio-token
+              readOnly: true
+              mountPath: /var/run/secrets/tokens
+            - name: workload-socket
+              mountPath: /var/run/secrets/workload-spiffe-uds
+            - name: credential-socket
+              mountPath: /var/run/secrets/credential-uds
+            - name: workload-certs
+              mountPath: /var/run/secrets/workload-spiffe-credentials
+            - name: istio-envoy
+              mountPath: /etc/istio/proxy
+            - name: config-volume
+              mountPath: /etc/istio/config
+            - name: istiod-ca-cert
+              mountPath: /var/run/secrets/istio
+            - name: podinfo
+              mountPath: /etc/istio/pod
+            - name: egressgateway-certs
+              readOnly: true
+              mountPath: /secrets/istio/egressgateway-certs
+          terminationMessagePolicy: File
+          image: {{ .Values.images.envoy }}
+          args:
+            - proxy
+            - '--proxyLogPath'
+            - '--log_rotate=/var/log/audit/application.log'
+            - '--log_output_level=default:info'
+            - '--proxyLogPath=/var/log/audit/envoy.log'
+            - '--proxyLogLevel=info'
+            - '--log_rotate_max_size=1'
+            - '--log_rotate_max_backups=2'
+            - '--log_rotate_max_age=30'
+            - router
+            - '--domain'
+            - $(POD_NAMESPACE).svc.cluster.local
+            - '--proxyLogLevel=warning'
+            - '--proxyComponentLogLevel=misc:error'
+            - '--log_output_level=default:warn'
+            - '--serviceCluster'
+            - istio-egressgateway
+            - '--trust-domain=cluster.local'
+      automountServiceAccountToken: false
+      serviceAccount: default
+      volumes:
+        - name: synai-default-secret-istio
+          projected:
+            sources:
+              - serviceAccountToken:
+                  expirationSeconds: 3600
+                  path: token
+            defaultMode: 400
+        - name: istio-access-logs
+          emptyDir: {}
+        - name: istio-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: istio-ca
+                  expirationSeconds: 3600
+                  path: istio-token
+            defaultMode: 256
+        - name: workload-socket
+          emptyDir: {}
+        - name: credential-socket
+          emptyDir: {}
+        - name: workload-certs
+          emptyDir: {}
+        - name: istiod-ca-cert
+          configMap:
+            name: istio-ca-root-cert
+            defaultMode: 256
+        - name: podinfo
+          downwardAPI:
+            items:
+              - path: labels
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels
+              - path: annotations
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.annotations
+            defaultMode: 256
+        - name: istio-envoy
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: istio-basic
+            defaultMode: 256
+            optional: true
+        - name: egressgateway-certs
+          secret:
+            secretName: egressgateway-certs-secret
+            defaultMode: 256
+            optional: true
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
